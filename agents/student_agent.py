@@ -35,6 +35,7 @@ class StudentAgent(Agent):
     Please check the sample implementation in agents/random_agent.py or agents/human_agent.py for more details.
     """
 
+
     # Some simple code to help you with timing. Consider checking 
     # time_taken during your search and breaking with the best answer
     # so far when it nears 2 seconds.
@@ -46,4 +47,64 @@ class StudentAgent(Agent):
     # Dummy return (you should replace this with your actual logic)
     # Returning a random valid move as an example
     return random_move(chess_board,player)
+  
+  def is_corner_available(chess_board, valid_moves):
+    board_size = (chess_board.shape)[0]
+
+    corners = [(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)]
+
+    #turn into a set so you can & them to see if theres a match in both lists
+    if bool(set(corners) & set(valid_moves)):
+      #return double instead of bool for weighting
+      return 1.0
+    else:
+      return 0.0
+  
+  def fixed_peices(chess_board):
+    ##Tough gotta think about this some more
+    return 1.0
+  
+  def adjacent_spaces(chess_board, player, oppenent):
+    board_size = chess_board.shape[0]
+    
+    player_pieces_indices = np.argwhere(chess_board == player)
+    #argwhere doesn't return tuples :(
+    player_pieces = [tuple(indx) for indx in player_pieces_indices]
+
+    opponent_pieces_indices = np.argwhere(chess_board == oppenent)
+    opponent_pieces = [tuple(indx) for indx in opponent_pieces_indices]
+
+    opp_adjacent = 0
+    player_adjacent = 0 
+
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+    
+    
+    for dir in directions:
+      dx, dy = dir
+
+      for (r,c) in player_pieces:
+        r += dx
+        c += dy
+        #check to see if square is outside chess board
+        if not (0 <= r < board_size and 0 <= c < board_size):
+          continue
+
+        if chess_board[r,c] == 0:
+          player_adjacent += 1
+      
+      for (r,c) in opponent_pieces:
+        r += dx
+        c += dy
+        #check to see if square is outside chess board
+        if not (0 <= r < board_size and 0 <= c < board_size):
+          continue
+
+        if chess_board[r,c] == 0:
+          opp_adjacent += 1
+      
+      return (opp_adjacent - player_adjacent)/(opp_adjacent + player_adjacent)
+
+
+
 
