@@ -7,6 +7,27 @@ from copy import deepcopy
 import time
 from helpers import random_move, count_capture, execute_move, check_endgame, get_valid_moves
 
+
+class Node(object):
+  board_state = None
+  heuristicValue = 0
+  montecarloSuccessAndTot = (0,0)
+  minORmax = ""
+  children = []
+
+  def __init__ (self, board_state, heuristicValue,montecarloSuccessAndTot, minORmax, children):
+    self.board_state = board_state
+    self.heuristicValue= heuristicValue
+    self.montecarloSuccessAndTot=montecarloSuccessAndTot
+    self.minORmax= minORmax
+    self.children = children
+
+def createNode(board_state, heuristicValue,montecarloSuccess, montecarloTotalSim, minORmax, children):
+  node = Node(board_state, heuristicValue,montecarloSuccess, montecarloTotalSim, minORmax, children)
+  return node
+
+
+
 @register_agent("student_agent")
 class StudentAgent(Agent):
   """
@@ -336,8 +357,32 @@ class StudentAgent(Agent):
     weighted_values = [var * weight for var, weight in zip(heuristic_variables, weights)]
 
     return sum(weighted_values)
+  
+  
+  #monteCarlo function
+  def monteCarlo(self,chess_board , succcess, totalSim): #returns a tuple (#successes, #totalSimulations)
+      #for now
+      return (0,1)
+  
+
+  #
+  def alphaBetaPruningAlgo(self,):
+     return 0
 
 
+
+  #
+  def treeStructure(self, chess_board , player ,opponent):
+    initialN= Node(chess_board, 0, (0,0) , minORmax = "max" )
+    moves = get_valid_moves(chess_board, player)
+    heuristics =[]
+    for move in moves:
+      heuristics = heuristics.append(move, self.heuristicFunction(move))
+    heuristics.sort( key=lambda tup: tup[1], reverse=True)
+    for everyMove in heuristics : 
+      initialN.children.append(createNode(execute_move(chess_board, everyMove(0),player)), everyMove(1), self.monteCarlo(everyMove.chess_board , 0 , 1), "min" )
+    #now we have all possible children nodes of the initial node with their respective values.
+    #we have to get to pruning
 
 
 
