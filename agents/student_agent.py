@@ -12,18 +12,18 @@ class Node(object):
   board_state = None
   heuristicValue = 0
   montecarloSuccessAndTot = (0,0)
-  minORmax = ""
+  max = 1
   children = []
 
-  def __init__ (self, board_state, heuristicValue,montecarloSuccessAndTot, minORmax, children):
+  def __init__ (self, board_state, heuristicValue,montecarloSuccessAndTot, max, children):
     self.board_state = board_state
     self.heuristicValue= heuristicValue
     self.montecarloSuccessAndTot=montecarloSuccessAndTot
-    self.minORmax= minORmax
+    self.max= max
     self.children = children
 
-def createNode(board_state, heuristicValue,montecarloSuccess, montecarloTotalSim, minORmax, children):
-  node = Node(board_state, heuristicValue,montecarloSuccess, montecarloTotalSim, minORmax, children)
+def createNode(board_state, heuristicValue,montecarloSuccessAndTot, max, children):
+  node = Node(board_state, heuristicValue,montecarloSuccessAndTot, max, children)
   return node
 
 
@@ -359,30 +359,81 @@ class StudentAgent(Agent):
     return sum(weighted_values)
   
   
-  #monteCarlo function
-  def monteCarlo(self,chess_board , succcess, totalSim): #returns a tuple (#successes, #totalSimulations)
-      #for now
-      return (0,1)
+  #monteCarlo function, returns the number of successes out of given total simulations allowed
+  def monteCarlo(self,chess_board , totalSim , player, opponent): 
+    success=0
+    if check_endgame(chess_board, player , opponent)[0]: return success
+    else: 
+      newBoard= execute_move(chess_board, random_move(chess_board, player), player)
+      check = check_endgame(newBoard, player , opponent)
+      #if check[0] && check[]: return success 
+      #else: execute_move(newBoard, random_move(newBoard, opponent), opponent)
+
+     
+
+  
+
+
+  #
+  def cutoff(self,s):
+    return 0
+
+
+  #
+  def maxValue(self, s, alpha, beta):
+    return 0
   
 
   #
-  def alphaBetaPruningAlgo(self,):
-     return 0
+  def minValue(self, s, alpha, beta):
+    return 0
 
 
 
   #
-  def treeStructure(self, chess_board , player ,opponent):
-    initialN= Node(chess_board, 0, (0,0) , minORmax = "max" )
-    moves = get_valid_moves(chess_board, player)
+  def alphaBetaPruningAlgo(self,):
+    return 0
+
+
+  #
+  def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
+
+    grandParent= Node(chess_board, 0, (0,0) , max = 1 , empty = list()) #max node
+    GPmoves = get_valid_moves(chess_board, player) #players valid moves
+
+    #sort grandParent moves by heuristic values descending
     heuristics =[]
-    for move in moves:
-      heuristics = heuristics.append(move, self.heuristicFunction(move))
+    for GPmove in GPmoves:
+      heuristics = heuristics.append(GPmove, self.heuristicFunction(GPmove))
     heuristics.sort( key=lambda tup: tup[1], reverse=True)
-    for everyMove in heuristics : 
-      initialN.children.append(createNode(execute_move(chess_board, everyMove(0),player)), everyMove(1), self.monteCarlo(everyMove.chess_board , 0 , 1), "min" )
-    #now we have all possible children nodes of the initial node with their respective values.
-    #we have to get to pruning
+
+    #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
+    for GPMove in heuristics : 
+      parentsBoard = execute_move(chess_board, GPMove(0) , player)
+
+      parent= createNode(parentsBoard, GPMove(1), 0  , max=0, empty = list()) #min node with no children, yet..
+      PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
+
+      #sort Parent moves by heuristic values descending
+      heuristicOrdering = []
+      for PMove in  PMoves:
+        heuristicOdering = heuristicOdering.append(PMove, self.heuristicFunction(PMove))
+      heuristicOrdering.sort( key=lambda tup: tup[1], reverse=True)
+
+      #created all children of each parent and put them in a list of the Parent with respect to their heuristic values.
+      for PMove in heuristicOrdering:
+        childsBoard = execute_move(parentsBoard, PMove(0) , opponent)
+        ########### MONTE CARLO VALUES ARE AT LEAF NODES, to be completed
+        child=createNode(childsBoard, PMove(1), self.monteCarlo(self , childsBoard, numberOFSimulations, player, opponent)  , max=1, empty = list()) #max node where we get the montecarlo values of the board states where player wins, +1s
+        parent.children.append(child)
+      
+      grandParent.children.append(parent)
+
+
+      #we calculate the montecarlo values for each move of the oppenent and list the utility values. we don't care about which moves were taken
+      #for eachPossibility in childsValidMoves:
+       # monteCarloValues.append(self.monteCarlo(execute_move(child.chess_board,eachPossibility,opponent)))
+    #NOW we have a tree with depth 2, leaf nodes being monteCarlo Values
 
 
 
