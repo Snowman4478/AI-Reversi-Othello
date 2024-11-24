@@ -50,7 +50,7 @@ class StudentAgent(Agent):
   
 
   #counts corners owned by player
-  def taken_corner(chess_board, player):
+  def taken_corner(self, chess_board, player):
     board_size = (chess_board.shape)[0]
 
     corners = [(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)]
@@ -63,9 +63,8 @@ class StudentAgent(Agent):
     return corner_count/4
 
   
-
   #calculates how many pieces are unable to be moved
-  def fixed_peices(chess_board, player):
+  def fixed_peices(self, chess_board, player):
     board_size = (chess_board.shape)[0]
     #pieces that are "locked in" froma all sides, can't be flipped thus we check
     #the sides and diagonals to see if they are filled in
@@ -98,7 +97,7 @@ class StudentAgent(Agent):
   
 
   #calculates adjacent empty sqaures of opponent - player and returns normalized value
-  def adjacent_spaces(chess_board, player, opponent):
+  def adjacent_spaces(self, chess_board, player, opponent):
     board_size = chess_board.shape[0]
     
     player_pieces_indices = np.argwhere(chess_board == player)
@@ -108,10 +107,12 @@ class StudentAgent(Agent):
     opponent_pieces_indices = np.argwhere(chess_board == opponent)
     opponent_pieces = [tuple(indx) for indx in opponent_pieces_indices]
 
-    opp_adjacent = 0
-    player_adjacent = 0 
 
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+
+    player_seen = set()
+    opp_seen = set()
     
     
     for dir in directions:
@@ -125,7 +126,7 @@ class StudentAgent(Agent):
           continue
 
         if chess_board[r,c] == 0:
-          player_adjacent += 1
+          player_seen.add((r,c))
       
       for (r,c) in opponent_pieces:
         r += dx
@@ -135,13 +136,13 @@ class StudentAgent(Agent):
           continue
 
         if chess_board[r,c] == 0:
-          opp_adjacent += 1
+          opp_seen.add((r,c))
       
-    return (opp_adjacent - player_adjacent)/(opp_adjacent + player_adjacent)
+    return (len(opp_seen) - len(player_seen))/(len(opp_seen) + len(player_seen))
   
 
   #calculates players pieces - opponentes and returns normalized value
-  def piece_difference(chess_board, player, opponent):
+  def piece_difference(self, chess_board, player, opponent):
 
     num_of_player_pieces = len(np.argwhere(chess_board == player))
     num_of_opponent_pieces = len(np.argwhere(chess_board == opponent))
@@ -150,7 +151,7 @@ class StudentAgent(Agent):
 
 
   #calculates if the next move causes opponent to not be able to play
-  def does_opponent_pass(chess_board, player, opponent):
+  def does_opponent_pass(self, chess_board, player, opponent):
     player_moves = get_valid_moves(chess_board, player)
     opponent_moves = get_valid_moves(chess_board, opponent)
       
@@ -168,7 +169,7 @@ class StudentAgent(Agent):
 
   #calculates the score of the current placed pieces using our scoring system
   #this is a helper function so we can normalize it
-  def placement_score_calc(chess_board, cur_player):
+  def placement_score_calc(self, chess_board, cur_player):
     #we will do a scale of -10 to 10 where -10 is the worst 
     #position and 10 is the best.
     board_size = (chess_board.shape)[0]
@@ -272,18 +273,69 @@ class StudentAgent(Agent):
   
 
   #calculate the number of moves you can make vs opponent
-  def available_moves(chess_board,player,opponent):
+  def available_moves(self, chess_board,player,opponent):
     player_moves = len(get_valid_moves(chess_board, player))
     opponent_moves = len(get_valid_moves(chess_board, opponent))
 
     return (player_moves - opponent_moves)/(player_moves + opponent_moves + 1)
 
 
+  #our actual heuristic function will be a linear combination of the previous factors
+  def heuristic_function(self, chess_board, player, opponent):
+    #weights will be in the following order:
+    #taken_corner, fixed_pieces, adjacent_spaces, piece_diff
+    #does_opponent_pass, placement_score, available_moves 
+    weights = [0, 0, 0, 0, 0, 0, 0]
 
+    nonzero_pieces = np.count_nonzero(chess_board)
+    total_pieces = np.size(chess_board)
 
+    #we calculate how far along we are in the game by looking at the pieces placed
+    cur_progress = nonzero_pieces/total_pieces
 
+    #if we are near the start of the game, weight differently
+    if cur_progress <= 1/3:
+      #3 is highest weight, 1 is lowest, 0 is no weight
+      weights = [3, 3, 2, 0, 0, 2, 3]
+    #midgame
+    elif 1/3 < cur_progress and cur_progress <= 2/3:
+      weights = [3, 3, 2, 1, 2, 2, 1]
+    #endgame
+    else:
+      weights = [3, 3, 2, 2, 3, 2, 0]
+    
+    #if weight = 0 for a process we can save time by just not computing it,
+    #only weights that can be 0 are piece_diff, opp_pass and available moves
+    corner_heuristic = self.taken_corner(chess_board, player)
+    
+    fixed_heuristic = self.fixed_peices(chess_board, player)
 
+    adjacent_heuristic = self.adjacent_spaces(chess_board, player, opponent)
 
+    if weights[3] == 0:
+      diff_heuristic = 0
+    else:
+      diff_heuristic = self.piece_difference(chess_board, player, opponent)
+    
+    if weights[4] == 0:
+      pass_heuristic = 0
+    else:
+      pass_heuristic = self.does_opponent_pass(chess_board, player, opponent)
+    
+    score_heuristic = self.placement_score(chess_board, player, opponent)
+
+    if weights[6] == 0:
+      avail_heuristic = 0
+    else:
+      avail_heuristic = self.available_moves(chess_board, player, opponent)
+    
+    heuristic_variables = [corner_heuristic, fixed_heuristic, adjacent_heuristic, 
+                           diff_heuristic, pass_heuristic, score_heuristic, avail_heuristic]
+    
+    #get weighted values
+    weighted_values = [var * weight for var, weight in zip(heuristic_variables, weights)]
+
+    return sum(weighted_values)
 
 
 
