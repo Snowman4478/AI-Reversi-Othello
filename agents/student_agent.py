@@ -63,7 +63,7 @@ class StudentAgent(Agent):
     # time_taken during your search and breaking with the best answer
     # so far when it nears 2 seconds.
     start_time = time.time()
-    next_move = self.treeStructure(chess_board, player, opponent, numberOFSimulations=5)
+    next_move = self.treeStructure(chess_board, player, opponent, numberOFSimulations=1)
     time_taken = time.time() - start_time
 
     print("My AI's turn took ", time_taken, "seconds.")
@@ -71,7 +71,7 @@ class StudentAgent(Agent):
     # Dummy return (you should replace this with your actual logic)
     # Returning a random valid move as an example
     print(f'player = {player}')
-    
+    print(chess_board)
     print(next_move)
     return next_move
   
@@ -184,7 +184,7 @@ class StudentAgent(Agent):
         if chess_board[r,c] == 0:
           opp_seen.add((r,c))
       
-    return (len(opp_seen) - len(player_seen))/(len(opp_seen) + len(player_seen))
+    return (len(opp_seen) - len(player_seen))/(len(opp_seen) + len(player_seen)+1)
   
 
   #calculates players pieces - opponentes and returns normalized value
@@ -433,8 +433,8 @@ class StudentAgent(Agent):
       child_beta, child_move = self.maxValue(eachChild, alpha, beta, eachChild.move)
       beta = min(beta, child_beta)
       if alpha >= beta: 
-        return (alpha, child_move)
-    return (beta, child_move)
+        return (alpha, s.move)
+    return (beta, s.move)
 
 
   #Returns winning probability againsts a good opponent for a given max Node
@@ -467,17 +467,18 @@ class StudentAgent(Agent):
       PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
 
       #sort Parent moves by heuristic values descending
-      heuristicOrdering = []
-      for PMove in PMoves:
-        heuristicOrdering.append((PMove, self.heuristic_function(parentsBoard, PMove, player, opponent))) 
-      heuristicOrdering.sort( key=lambda tup: tup[1], reverse=True)
+      # heuristicOrdering = []
+      # for PMove in PMoves:
+      #   heuristicOrdering.append((PMove, self.heuristic_function(parentsBoard, PMove, player, opponent))) 
+      # heuristicOrdering.sort( key=lambda tup: tup[1], reverse=True)
 
       #created all children of each parent and put them in a list of the Parent with respect to their heuristic values.
-      for PMove, PHValue in heuristicOrdering:
+      # for PMove, PHValue in heuristicOrdering:
+      for PMove in PMoves:
         childsBoard = deepcopy(parentsBoard)
         execute_move(childsBoard, PMove , opponent) # childs board
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
-        child=createNode(childsBoard, PHValue, self.monteCarlo(childsBoard, numberOFSimulations, player, opponent)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
+        child=createNode(childsBoard, 0, self.monteCarlo(childsBoard, numberOFSimulations, player, opponent)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
         parent.children.append(child)
       
 
