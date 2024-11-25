@@ -11,7 +11,7 @@ from helpers import random_move, count_capture, execute_move, check_endgame, get
 class Node(object):
   board_state = None
   heuristicValue = 0
-  montecarloSuccessAndTot = (0,0)
+  montecarloSuccessAndTot = 0
   max = 1
   children = []
 
@@ -359,7 +359,7 @@ class StudentAgent(Agent):
     return sum(weighted_values)
   
   
-  #monteCarlo function, returns the number of successes out of given total simulations allowed
+  #monteCarlo function, returns the number of successes divided by the total number of simulations
   def monteCarlo(self,chess_board , totalSim , player, opponent): 
     success=0
     total=totalSim
@@ -373,13 +373,13 @@ class StudentAgent(Agent):
           execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
         i=i+1
       is_end,bluePlayerSc, brownPlayerSc = check_endgame(chess_board_copy, player , opponent)
-      if (player == 1 and bluePlayerSc > brownPlayerSc) or (player == 2 and brownPlayerSc > bluePlayerSc) ():
+      if (player == 1 and bluePlayerSc > brownPlayerSc) or (player == 2 and brownPlayerSc > bluePlayerSc):
         success = success+1
       totalSim=totalSim-1
     return success/total # returns a probability of success
 
 
-  #
+  #Alpha-beta pruning for max node, helper function
   def maxValue(self, s, alpha, beta):
     if s.children == [] : # if cutoff s , return Evaluation(s)
       return s.montecarloSuccessAndTot
@@ -389,7 +389,7 @@ class StudentAgent(Agent):
     return alpha
 
 
-  #
+  #Alpha-beta pruning for min node, helper function
   def minValue(self, s, alpha, beta):
     if s.children == [] : # if cutoff s , return Evaluation(s)
       return s.montecarloSuccessAndTot
@@ -399,27 +399,28 @@ class StudentAgent(Agent):
     return beta
 
 
-  #
+  #Returns winning probability againsts a good opponent for a given max Node
   def alphaBetaPruningAlgo(self, InitialNode):
-    winningProbability = self.maxValue(self,InitialNode, -np.inf, np.inf )
+     winningProbability = self.maxValue(self,InitialNode, -np.inf, np.inf )
+     return winningProbability
 
 
-  #
+  #Creating Nodes and links between them for pruning.
   def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
     chess_board_copy= deepcopy(chess_board)
-    grandParent= Node(chess_board_copy, 0, (0,0) , max = 1 , empty = list()) #max node
+    grandParent= Node(chess_board_copy, 0, 0 , max = 1 , empty = list()) #max node
     GPmoves = get_valid_moves(chess_board_copy, player) #players valid moves
 
     #sort grandParent moves by heuristic values descending
     heuristics =[]
     for GPmove in GPmoves:
-      heuristics = heuristics.append(GPmove, self.heuristicFunction(GPmove))
+      heuristics = heuristics.append(GPmove, self.heuristic_function( self,chess_board_copy,GPmove, player, opponent))
     heuristics.sort( key=lambda tup: tup[1], reverse=True)
 
     #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
     for GPMove in heuristics : 
       parentsBoard = deepcopy(chess_board_copy)
-      execute_move(parentsBoard, GPMove(0) , player)
+      execute_move(parentsBoard, GPMove(0) , player) # parents board
 
       parent= createNode(parentsBoard, GPMove(1), 0  , max=0, empty = list()) #min node with no children, yet..
       PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
@@ -427,14 +428,14 @@ class StudentAgent(Agent):
       #sort Parent moves by heuristic values descending
       heuristicOrdering = []
       for PMove in  PMoves:
-        heuristicOdering = heuristicOdering.append(PMove, self.heuristicFunction(PMove))
+        heuristicOdering = heuristicOdering.append(PMove, self.heuristic_function(self, parentsBoard, PMove, player, opponent)) 
       heuristicOrdering.sort( key=lambda tup: tup[1], reverse=True)
 
       #created all children of each parent and put them in a list of the Parent with respect to their heuristic values.
       for PMove in heuristicOrdering:
         childsBoard = deepcopy(parentsBoard)
-        execute_move(childsBoard, PMove(0) , opponent)
-        ########### MONTE CARLO VALUES ARE AT LEAF NODES, ne heuristic values at depth 2
+        execute_move(childsBoard, PMove(0) , opponent) # childs board
+        ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
         child=createNode(childsBoard, PMove(1), self.monteCarlo(self , childsBoard, numberOFSimulations, player, opponent)  , max=1, empty = list()) #max node where we get the montecarlo values of the board states where player wins, +1s
         parent.children.append(child)
       
