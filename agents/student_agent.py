@@ -362,6 +362,7 @@ class StudentAgent(Agent):
   #monteCarlo function, returns the number of successes out of given total simulations allowed
   def monteCarlo(self,chess_board , totalSim , player, opponent): 
     success=0
+    total=totalSim
     while (totalSim >=0):
       chess_board_copy = deepcopy(chess_board)
       i=0 
@@ -375,27 +376,32 @@ class StudentAgent(Agent):
       if (player == 1 and bluePlayerSc > brownPlayerSc) or (player == 2 and brownPlayerSc > bluePlayerSc) ():
         success = success+1
       totalSim=totalSim-1
-
-
-  #
-  def cutoff(self,s):
-    return 0
+    return success/total # returns a probability of success
 
 
   #
   def maxValue(self, s, alpha, beta):
-    return 0
-  
+    if s.children == [] : # if cutoff s , return Evaluation(s)
+      return s.montecarloSuccessAndTot
+    for eachChild in s.children:
+      alpha = max(alpha, self.minValue(eachChild, alpha, beta))
+      if alpha >= beta: return beta
+    return alpha
+
 
   #
   def minValue(self, s, alpha, beta):
-    return 0
-
+    if s.children == [] : # if cutoff s , return Evaluation(s)
+      return s.montecarloSuccessAndTot
+    for eachChild in s.children:
+      beta = min(beta, self.maxValue(eachChild, alpha, beta))
+      if alpha >= beta: return alpha
+    return beta
 
 
   #
-  def alphaBetaPruningAlgo(self,):
-    return 0
+  def alphaBetaPruningAlgo(self, InitialNode):
+    winningProbability = self.maxValue(self,InitialNode, -np.inf, np.inf )
 
 
   #
@@ -428,19 +434,11 @@ class StudentAgent(Agent):
       for PMove in heuristicOrdering:
         childsBoard = deepcopy(parentsBoard)
         execute_move(childsBoard, PMove(0) , opponent)
-        ########### MONTE CARLO VALUES ARE AT LEAF NODES, to be completed
+        ########### MONTE CARLO VALUES ARE AT LEAF NODES, ne heuristic values at depth 2
         child=createNode(childsBoard, PMove(1), self.monteCarlo(self , childsBoard, numberOFSimulations, player, opponent)  , max=1, empty = list()) #max node where we get the montecarlo values of the board states where player wins, +1s
         parent.children.append(child)
       
       grandParent.children.append(parent)
-
-
-      #we calculate the montecarlo values for each move of the oppenent and list the utility values. we don't care about which moves were taken
-      #for eachPossibility in childsValidMoves:
-       # monteCarloValues.append(self.monteCarlo(execute_move(child.chess_board,eachPossibility,opponent)))
-    #NOW we have a tree with depth 2, leaf nodes being monteCarlo Values
-
-
 
 
 
