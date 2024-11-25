@@ -14,7 +14,7 @@ class Node(object):
   montecarloSuccessAndTot = 0
   max = 1
   children = []
-  move= (0,0)
+  move= (-1,-1)
 
   def __init__ (self, board_state, heuristicValue,montecarloSuccessAndTot, max, children, move):
     self.board_state = board_state
@@ -63,13 +63,14 @@ class StudentAgent(Agent):
     # time_taken during your search and breaking with the best answer
     # so far when it nears 2 seconds.
     start_time = time.time()
+    next_move = self.treeStructure(chess_board, player, opponent, numberOFSimulations=50)
     time_taken = time.time() - start_time
 
     print("My AI's turn took ", time_taken, "seconds.")
 
     # Dummy return (you should replace this with your actual logic)
     # Returning a random valid move as an example
-    return random_move(chess_board,player)
+    return next_move
   
 
   #counts corners owned by player
@@ -382,40 +383,42 @@ class StudentAgent(Agent):
 
 
   #Alpha-beta pruning for max node, helper function
-  def maxValue(self, s, alpha, beta):
+  def maxValue(self, s, alpha, beta, cur_move):
     if s.children == [] : # if cutoff s , return Evaluation(s)
       return s.montecarloSuccessAndTot
     for eachChild in s.children:
-      alpha = max(alpha, self.minValue(eachChild, alpha, beta))
+      child_alpha, child_move  = self.minValue(eachChild, alpha, beta, eachChild.move)
+      alpha = max(alpha, child_alpha)
       if alpha >= beta: 
-        return beta
-    return alpha 
+        return (beta, child_move)
+    return (alpha, cur_move)
 
 
   #Alpha-beta pruning for min node, helper function
-  def minValue(self, s, alpha, beta):
+  def minValue(self, s, alpha, beta, cur_move):
     if s.children == [] : # if cutoff s , return Evaluation(s)
       return s.montecarloSuccessAndTot
     for eachChild in s.children:
-      beta = min(beta, self.maxValue(eachChild, alpha, beta))
+      child_beta, child_move = self.maxValue(eachChild, alpha, beta, eachChild.move)
+      beta = min(beta, child_beta)
       if alpha >= beta: 
-        return alpha
-    return beta
+        return (alpha, child_move)
+    return (beta, cur_move)
 
 
   #Returns winning probability againsts a good opponent for a given max Node
   def alphaBetaPruningAlgo(self, InitialNode):
     if InitialNode.max== 1 :
-      winningProbability = self.maxValue(self,InitialNode, -np.inf, np.inf )
+      winningProbability, winning_move = self.maxValue(self,InitialNode, -np.inf, np.inf )
     else: 
-      winningProbability = self.minValue(self,InitialNode, -np.inf, np.inf )
-    return winningProbability
+      winningProbability, winning_move = self.minValue(self,InitialNode, -np.inf, np.inf )
+    return winningProbability, winning_move
 
 
   #Creating Nodes and links between them for pruning.
   def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
     chess_board_copy= deepcopy(chess_board)
-    grandParent= Node(chess_board_copy, 0, 0 , max = 1 , empty = list()) #max node
+    grandParent= Node(chess_board_copy, 0, 0 , max = 1 , children = list(), move=(-1,-1)) #max node
     GPmoves = get_valid_moves(chess_board_copy, player) #players valid moves
 
     #sort grandParent moves by heuristic values descending
@@ -429,7 +432,7 @@ class StudentAgent(Agent):
       parentsBoard = deepcopy(chess_board_copy)
       execute_move(parentsBoard, GPMove , player) # parents board
 
-      parent= createNode(parentsBoard, GPHvalue, 0  , max=0, empty = list() , move = GPMove ) #min node with no children, yet..
+      parent= createNode(parentsBoard, GPHvalue, 0  , max=0, children = list() , move = GPMove ) #min node with no children, yet..
       PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
 
       #sort Parent moves by heuristic values descending
@@ -443,14 +446,17 @@ class StudentAgent(Agent):
         childsBoard = deepcopy(parentsBoard)
         execute_move(childsBoard, PMove , opponent) # childs board
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
-        child=createNode(childsBoard, PHvalue, self.monteCarlo(childsBoard, numberOFSimulations, player, opponent)  , max=1, empty = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
+        child=createNode(childsBoard, PHvalue, self.monteCarlo(childsBoard, numberOFSimulations, player, opponent)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
         parent.children.append(child)
       
 
 
       grandParent.children.append(parent)
 
-    grandParent.montecarloSuccessAndTot = self.alphaBetaPruningAlgo(grandParent)
+    winning_prob, winning_move = self.alphaBetaPruningAlgo(grandParent)
+    grandParent.montecarloSuccessAndTot = winning_prob
+
+    return winning_move
 
 
 
