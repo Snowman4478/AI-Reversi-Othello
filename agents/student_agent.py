@@ -395,12 +395,12 @@ class StudentAgent(Agent):
       while (check_endgame(chess_board_copy, player , opponent)[0] == False) :
         if (i%2 == 0): #player's move
           if(get_valid_moves(chess_board_copy, player) == []):
-            execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
+            break
           else:
             execute_move(chess_board_copy, random_move(chess_board_copy, player), player)
         else: #opponent's move
           if(get_valid_moves(chess_board_copy, opponent) == []):
-            execute_move(chess_board_copy, random_move(chess_board_copy, player), player)
+            break
           else:
             execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
         
