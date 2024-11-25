@@ -71,7 +71,7 @@ class StudentAgent(Agent):
     # Dummy return (you should replace this with your actual logic)
     # Returning a random valid move as an example
     print(f'player = {player}')
-    print(chess_board)
+    
     print(next_move)
     return next_move
   
@@ -328,14 +328,15 @@ class StudentAgent(Agent):
 
   #our actual heuristic function will be a linear combination of the previous factors
   def heuristic_function(self, chess_board, move, player, opponent):
-    execute_move(chess_board, move, player)
+    chess_board_copy = deepcopy(chess_board)
+    execute_move(chess_board_copy, move, player)
     #weights will be in the following order:
     #taken_corner, fixed_pieces, adjacent_spaces, piece_diff
     #does_opponent_pass, placement_score, available_moves 
     weights = [0, 0, 0, 0, 0, 0, 0]
 
-    nonzero_pieces = np.count_nonzero(chess_board)
-    total_pieces = np.size(chess_board)
+    nonzero_pieces = np.count_nonzero(chess_board_copy)
+    total_pieces = np.size(chess_board_copy)
 
     #we calculate how far along we are in the game by looking at the pieces placed
     cur_progress = nonzero_pieces/total_pieces
@@ -353,28 +354,28 @@ class StudentAgent(Agent):
     
     #if weight = 0 for a process we can save time by just not computing it,
     #only weights that can be 0 are piece_diff, opp_pass and available moves
-    corner_heuristic = self.taken_corner(chess_board, player)
+    corner_heuristic = self.taken_corner(chess_board_copy, player)
     
-    fixed_heuristic = self.fixed_peices(chess_board, player)
+    fixed_heuristic = self.fixed_peices(chess_board_copy, player)
 
-    adjacent_heuristic = self.adjacent_spaces(chess_board, player, opponent)
+    adjacent_heuristic = self.adjacent_spaces(chess_board_copy, player, opponent)
 
     if weights[3] == 0:
       diff_heuristic = 0
     else:
-      diff_heuristic = self.piece_difference(chess_board, player, opponent)
+      diff_heuristic = self.piece_difference(chess_board_copy, player, opponent)
     
     if weights[4] == 0:
       pass_heuristic = 0
     else:
-      pass_heuristic = self.does_opponent_pass(chess_board, player, opponent)
+      pass_heuristic = self.does_opponent_pass(chess_board_copy, player, opponent)
     
-    score_heuristic = self.placement_score(chess_board, player, opponent)
+    score_heuristic = self.placement_score(chess_board_copy, player, opponent)
 
     if weights[6] == 0:
       avail_heuristic = 0
     else:
-      avail_heuristic = self.available_moves(chess_board, player, opponent)
+      avail_heuristic = self.available_moves(chess_board_copy, player, opponent)
     
     heuristic_variables = [corner_heuristic, fixed_heuristic, adjacent_heuristic, 
                            diff_heuristic, pass_heuristic, score_heuristic, avail_heuristic]
