@@ -14,16 +14,18 @@ class Node(object):
   montecarloSuccessAndTot = 0
   max = 1
   children = []
+  move= (0,0)
 
-  def __init__ (self, board_state, heuristicValue,montecarloSuccessAndTot, max, children):
+  def __init__ (self, board_state, heuristicValue,montecarloSuccessAndTot, max, children, move):
     self.board_state = board_state
     self.heuristicValue= heuristicValue
     self.montecarloSuccessAndTot=montecarloSuccessAndTot
     self.max= max
     self.children = children
+    self.move=move
 
-def createNode(board_state, heuristicValue,montecarloSuccessAndTot, max, children):
-  node = Node(board_state, heuristicValue,montecarloSuccessAndTot, max, children)
+def createNode(board_state, heuristicValue,montecarloSuccessAndTot, max, children, move):
+  node = Node(board_state, heuristicValue,montecarloSuccessAndTot, max, children, move)
   return node
 
 
@@ -385,8 +387,9 @@ class StudentAgent(Agent):
       return s.montecarloSuccessAndTot
     for eachChild in s.children:
       alpha = max(alpha, self.minValue(eachChild, alpha, beta))
-      if alpha >= beta: return beta
-    return alpha
+      if alpha >= beta: 
+        return beta
+    return alpha 
 
 
   #Alpha-beta pruning for min node, helper function
@@ -395,14 +398,18 @@ class StudentAgent(Agent):
       return s.montecarloSuccessAndTot
     for eachChild in s.children:
       beta = min(beta, self.maxValue(eachChild, alpha, beta))
-      if alpha >= beta: return alpha
+      if alpha >= beta: 
+        return alpha
     return beta
 
 
   #Returns winning probability againsts a good opponent for a given max Node
   def alphaBetaPruningAlgo(self, InitialNode):
-     winningProbability = self.maxValue(self,InitialNode, -np.inf, np.inf )
-     return winningProbability
+    if InitialNode.max== 1 :
+      winningProbability = self.maxValue(self,InitialNode, -np.inf, np.inf )
+    else: 
+      winningProbability = self.minValue(self,InitialNode, -np.inf, np.inf )
+    return winningProbability
 
 
   #Creating Nodes and links between them for pruning.
@@ -414,32 +421,36 @@ class StudentAgent(Agent):
     #sort grandParent moves by heuristic values descending
     heuristics =[]
     for GPmove in GPmoves:
-      heuristics = heuristics.append(GPmove, self.heuristic_function( self,chess_board_copy,GPmove, player, opponent))
+      heuristics = heuristics.append(GPmove, self.heuristic_function(chess_board_copy,GPmove, player, opponent))
     heuristics.sort( key=lambda tup: tup[1], reverse=True)
 
     #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
-    for GPMove in heuristics : 
+    for GPMove,GPHvalue in heuristics : 
       parentsBoard = deepcopy(chess_board_copy)
-      execute_move(parentsBoard, GPMove(0) , player) # parents board
+      execute_move(parentsBoard, GPMove , player) # parents board
 
-      parent= createNode(parentsBoard, GPMove(1), 0  , max=0, empty = list()) #min node with no children, yet..
+      parent= createNode(parentsBoard, GPHvalue, 0  , max=0, empty = list() , move = GPMove ) #min node with no children, yet..
       PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
 
       #sort Parent moves by heuristic values descending
       heuristicOrdering = []
-      for PMove in  PMoves:
-        heuristicOdering = heuristicOdering.append(PMove, self.heuristic_function(self, parentsBoard, PMove, player, opponent)) 
+      for PMove, PHvalue in  PMoves:
+        heuristicOdering = heuristicOdering.append(PMove, self.heuristic_function(parentsBoard, PMove, player, opponent)) 
       heuristicOrdering.sort( key=lambda tup: tup[1], reverse=True)
 
       #created all children of each parent and put them in a list of the Parent with respect to their heuristic values.
       for PMove in heuristicOrdering:
         childsBoard = deepcopy(parentsBoard)
-        execute_move(childsBoard, PMove(0) , opponent) # childs board
+        execute_move(childsBoard, PMove , opponent) # childs board
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
-        child=createNode(childsBoard, PMove(1), self.monteCarlo(self , childsBoard, numberOFSimulations, player, opponent)  , max=1, empty = list()) #max node where we get the montecarlo values of the board states where player wins, +1s
+        child=createNode(childsBoard, PHvalue, self.monteCarlo(childsBoard, numberOFSimulations, player, opponent)  , max=1, empty = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
         parent.children.append(child)
       
+
+
       grandParent.children.append(parent)
+
+    grandParent.montecarloSuccessAndTot = self.alphaBetaPruningAlgo(grandParent)
 
 
 
