@@ -362,16 +362,19 @@ class StudentAgent(Agent):
   #monteCarlo function, returns the number of successes out of given total simulations allowed
   def monteCarlo(self,chess_board , totalSim , player, opponent): 
     success=0
-    if check_endgame(chess_board, player , opponent)[0]: return success
-    else: 
-      newBoard= execute_move(chess_board, random_move(chess_board, player), player)
-      check = check_endgame(newBoard, player , opponent)
-      #if check[0] && check[]: return success 
-      #else: execute_move(newBoard, random_move(newBoard, opponent), opponent)
-
-     
-
-  
+    while (totalSim >=0):
+      chess_board_copy = deepcopy(chess_board)
+      i=0 
+      while (check_endgame(chess_board_copy, player , opponent)[0] == False) :
+        if (i%2 == 0): #player's move
+          execute_move(chess_board_copy, random_move(chess_board_copy, player), player)
+        else: #opponent's move
+          execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
+        i=i+1
+      is_end,bluePlayerSc, brownPlayerSc = check_endgame(chess_board_copy, player , opponent)
+      if (player == 1 and bluePlayerSc > brownPlayerSc) or (player == 2 and brownPlayerSc > bluePlayerSc) ():
+        success = success+1
+      totalSim=totalSim-1
 
 
   #
@@ -397,9 +400,9 @@ class StudentAgent(Agent):
 
   #
   def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
-
-    grandParent= Node(chess_board, 0, (0,0) , max = 1 , empty = list()) #max node
-    GPmoves = get_valid_moves(chess_board, player) #players valid moves
+    chess_board_copy= deepcopy(chess_board)
+    grandParent= Node(chess_board_copy, 0, (0,0) , max = 1 , empty = list()) #max node
+    GPmoves = get_valid_moves(chess_board_copy, player) #players valid moves
 
     #sort grandParent moves by heuristic values descending
     heuristics =[]
@@ -409,7 +412,8 @@ class StudentAgent(Agent):
 
     #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
     for GPMove in heuristics : 
-      parentsBoard = execute_move(chess_board, GPMove(0) , player)
+      parentsBoard = deepcopy(chess_board_copy)
+      execute_move(parentsBoard, GPMove(0) , player)
 
       parent= createNode(parentsBoard, GPMove(1), 0  , max=0, empty = list()) #min node with no children, yet..
       PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
@@ -422,7 +426,8 @@ class StudentAgent(Agent):
 
       #created all children of each parent and put them in a list of the Parent with respect to their heuristic values.
       for PMove in heuristicOrdering:
-        childsBoard = execute_move(parentsBoard, PMove(0) , opponent)
+        childsBoard = deepcopy(parentsBoard)
+        execute_move(childsBoard, PMove(0) , opponent)
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, to be completed
         child=createNode(childsBoard, PMove(1), self.monteCarlo(self , childsBoard, numberOFSimulations, player, opponent)  , max=1, empty = list()) #max node where we get the montecarlo values of the board states where player wins, +1s
         parent.children.append(child)
