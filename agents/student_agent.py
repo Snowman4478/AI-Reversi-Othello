@@ -76,18 +76,18 @@ class StudentAgent(Agent):
     return next_move
   
 
-  #counts corners owned by player
+  #see if next move you can grab a corner
   def taken_corner(self, chess_board, player):
     board_size = (chess_board.shape)[0]
 
     corners = [(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)]
     corner_count = 0
 
-    for corner_x,corner_y in corners:
-      if chess_board[corner_x,corner_y] == player:
-        corner_count +=1
+    valid_moves = get_valid_moves(chess_board, player)
 
-    return corner_count/4
+    if set(corners) & set(valid_moves):
+      return 100
+    return 0
 
   
   #calculates how many pieces are unable to be moved
@@ -139,7 +139,7 @@ class StudentAgent(Agent):
             fixed_count += 1
         
 
-    return fixed_count/len(player_pieces_indices)
+    return 100*fixed_count/len(player_pieces_indices)
   
 
   #calculates adjacent empty sqaures of opponent - player and returns normalized value
@@ -184,7 +184,7 @@ class StudentAgent(Agent):
         if chess_board[r,c] == 0:
           opp_seen.add((r,c))
       
-    return (len(opp_seen) - len(player_seen))/(len(opp_seen) + len(player_seen)+1)
+    return 100*(len(player_seen) - len(opp_seen))/(len(opp_seen) + len(player_seen)+1)
   
 
   #calculates players pieces - opponentes and returns normalized value
@@ -193,7 +193,7 @@ class StudentAgent(Agent):
     num_of_player_pieces = len(np.argwhere(chess_board == player))
     num_of_opponent_pieces = len(np.argwhere(chess_board == opponent))
 
-    return (num_of_player_pieces - num_of_opponent_pieces)/(num_of_player_pieces + num_of_opponent_pieces)
+    return 100*(num_of_player_pieces - num_of_opponent_pieces)/(1+num_of_player_pieces + num_of_opponent_pieces )
 
 
   #calculates if the next move causes opponent to not be able to play
@@ -208,7 +208,7 @@ class StudentAgent(Agent):
     #player also can't go and player has less score, that would be an auto loss
     if not opponent_moves:
       if player_moves or (player_score > opponent_score):
-        return 1.0
+        return 100
     
     return 0.0
   
@@ -315,7 +315,7 @@ class StudentAgent(Agent):
     opponent_score = self.placement_score_calc(chess_board, opponent)
 
     #add 1 to the denominator cause at beginning of the game potential to have 0 score in tiles
-    return (player_score - opponent_score) / (1 + player_score + opponent_score)
+    return 100*(abs(player_score) - abs(opponent_score)) / (1 + abs(player_score) + abs(opponent_score))
   
 
   #calculate the number of moves you can make vs opponent
@@ -323,12 +323,14 @@ class StudentAgent(Agent):
     player_moves = len(get_valid_moves(chess_board, player))
     opponent_moves = len(get_valid_moves(chess_board, opponent))
 
-    return (player_moves - opponent_moves)/(player_moves + opponent_moves + 1)
+    return 100*(player_moves - opponent_moves)/(player_moves + opponent_moves + 1)
+  
 
 
   #our actual heuristic function will be a linear combination of the previous factors
   def heuristic_function(self, chess_board, move, player, opponent):
     chess_board_copy = deepcopy(chess_board)
+
     execute_move(chess_board_copy, move, player)
     #weights will be in the following order:
     #taken_corner, fixed_pieces, adjacent_spaces, piece_diff
@@ -343,14 +345,13 @@ class StudentAgent(Agent):
 
     #if we are near the start of the game, weight differently
     if cur_progress <= 1/3:
-      #3 is highest weight, 1 is lowest, 0 is no weight
-      weights = [3, 3, 2, 0, 0, 2, 3]
+      weights = [0.9, 0.6, 0.4, 0, 0, 0.4, 0.3]
     #midgame
     elif 1/3 < cur_progress and cur_progress <= 2/3:
-      weights = [3, 3, 2, 1, 2, 2, 1]
+      weights = [0.9, 0.6, 0.4, 0.2, 0.1, 0.4, 0.2]
     #endgame
     else:
-      weights = [3, 3, 2, 2, 3, 2, 0]
+      weights = [0.9, 0.6, 0.4, 0.4, 0.6, 0.4, 0]
     
     #if weight = 0 for a process we can save time by just not computing it,
     #only weights that can be 0 are piece_diff, opp_pass and available moves
@@ -415,14 +416,17 @@ class StudentAgent(Agent):
 
   #monteCarlo function,FASTER, returns the average heuristic value of the board after certain number of steps
   def monteCarloFaster(self, chess_board, totalSim, player, opponent, steps):
+    # print('start')
     total=totalSim
     heuristics=0
     while (totalSim >=0):
       stepCopy=steps 
       stepCopy=2*stepCopy
       chess_board_copy = deepcopy(chess_board)
-      i=0 
+      i=0
+      # print(f'simulation {totalSim}')
       while (stepCopy>0) :
+        # print(f'stepCopy: {stepCopy}')
         if (i%2 == 0): #player's move
           if(get_valid_moves(chess_board_copy, player) == []):
             continue
@@ -434,7 +438,7 @@ class StudentAgent(Agent):
           else:
             execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
         i=i+1
-        steps=steps-1
+        stepCopy=stepCopy-1
       #no moves left, the end of game
       if(get_valid_moves(chess_board_copy, player) == []):
           if(get_valid_moves(chess_board_copy, opponent) == []):
@@ -449,6 +453,7 @@ class StudentAgent(Agent):
         heuristic_value = self.heuristic_function(chess_board_copy,random_move(chess_board_copy, player),player, opponent)
       totalSim=totalSim-1
       heuristics= heuristics+heuristic_value
+    # print('end')
     return heuristics/total #returns average
 
 
@@ -488,8 +493,18 @@ class StudentAgent(Agent):
   #Creating Nodes and links between them for pruning.
   def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
     chess_board_copy= deepcopy(chess_board)
+
     grandParent= createNode(chess_board_copy, 0, 0 , max = 1 , children = list(), move=(-1,-1)) #max node
     GPmoves = get_valid_moves(chess_board_copy, player) #players valid moves
+
+    #if corner is the move, instantly take
+    board_size = (chess_board_copy.shape)[0]
+    corners = set([(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)])
+
+    if corners & set(GPmoves):
+      for move in GPmoves:
+        if move in corners:
+          return move
 
     #sort grandParent moves by heuristic values descending
     heuristics = []
@@ -517,7 +532,7 @@ class StudentAgent(Agent):
         childsBoard = deepcopy(parentsBoard)
         execute_move(childsBoard, PMove , opponent) # childs board
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
-        child=createNode(childsBoard, 0, self.monteCarlo(childsBoard, numberOFSimulations, player, opponent)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
+        child=createNode(childsBoard, 0, self.monteCarloFaster(childsBoard, numberOFSimulations, player, opponent, 2)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
         parent.children.append(child)
       
 
