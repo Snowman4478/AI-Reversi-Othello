@@ -413,6 +413,45 @@ class StudentAgent(Agent):
     return success/total # returns a probability of success
 
 
+  #monteCarlo function,FASTER, returns the average heuristic value of the board after certain number of steps
+  def monteCarloFaster(self, chess_board, totalSim, player, opponent, steps):
+    total=totalSim
+    heuristics=0
+    while (totalSim >=0):
+      stepCopy=steps 
+      stepCopy=2*stepCopy
+      chess_board_copy = deepcopy(chess_board)
+      i=0 
+      while (stepCopy>0) :
+        if (i%2 == 0): #player's move
+          if(get_valid_moves(chess_board_copy, player) == []):
+            continue
+          else:
+            execute_move(chess_board_copy, random_move(chess_board_copy, player), player)
+        else: #opponent's move
+          if(get_valid_moves(chess_board_copy, opponent) == []):
+            continue
+          else:
+            execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
+        i=i+1
+        steps=steps-1
+      #no moves left, the end of game
+      if(get_valid_moves(chess_board_copy, player) == []):
+          if(get_valid_moves(chess_board_copy, opponent) == []):
+            is_end,bluePlayerSc, brownPlayerSc = check_endgame(chess_board_copy, player , opponent)
+            if (player == 1 and bluePlayerSc > brownPlayerSc) or (player == 2 and brownPlayerSc > bluePlayerSc):
+              heuristic_value= 100
+            else: 
+              heuristic_value= -1
+          else:
+            heuristic_value = 0
+      else:
+        heuristic_value = self.heuristic_function(chess_board_copy,random_move(chess_board_copy, player),player, opponent)
+      totalSim=totalSim-1
+      heuristics= heuristics+heuristic_value
+    return heuristics/total #returns average
+
+
   #Alpha-beta pruning for max node, helper function
   def maxValue(self, s, alpha, beta, cur_move):
     if s.children == [] : # if cutoff s , return Evaluation(s)
