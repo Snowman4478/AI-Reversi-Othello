@@ -63,7 +63,7 @@ class StudentAgent(Agent):
     # time_taken during your search and breaking with the best answer
     # so far when it nears 2 seconds.
     start_time = time.time()
-    next_move = self.treeStructure(chess_board, player, opponent, numberOFSimulations=1)
+    next_move = self.treeStructure(chess_board, player, opponent, numberOFSimulations=20)
     time_taken = time.time() - start_time
 
     print("My AI's turn took ", time_taken, "seconds.")
@@ -389,6 +389,7 @@ class StudentAgent(Agent):
   
   #monteCarlo function, returns the number of successes divided by the total number of simulations
   def monteCarlo(self,chess_board , totalSim , player, opponent): 
+
     success=0
     total=totalSim
     while (totalSim >=0):
@@ -416,7 +417,6 @@ class StudentAgent(Agent):
 
   #monteCarlo function,FASTER, returns the average heuristic value of the board after certain number of steps
   def monteCarloFaster(self, chess_board, totalSim, player, opponent, steps):
-    # print('start')
     total=totalSim
     heuristics=0
     while (totalSim >=0):
@@ -424,18 +424,13 @@ class StudentAgent(Agent):
       stepCopy=2*stepCopy
       chess_board_copy = deepcopy(chess_board)
       i=0
-      # print(f'simulation {totalSim}')
+      start = time.time()
       while (stepCopy>0) :
-        # print(f'stepCopy: {stepCopy}')
         if (i%2 == 0): #player's move
-          if(get_valid_moves(chess_board_copy, player) == []):
-            continue
-          else:
+          if(get_valid_moves(chess_board_copy, player) != []):
             execute_move(chess_board_copy, random_move(chess_board_copy, player), player)
         else: #opponent's move
-          if(get_valid_moves(chess_board_copy, opponent) == []):
-            continue
-          else:
+          if(get_valid_moves(chess_board_copy, opponent) != []):
             execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
         i=i+1
         stepCopy=stepCopy-1
@@ -446,14 +441,14 @@ class StudentAgent(Agent):
             if (player == 1 and bluePlayerSc > brownPlayerSc) or (player == 2 and brownPlayerSc > bluePlayerSc):
               heuristic_value= 100
             else: 
-              heuristic_value= -1
+              heuristic_value= -100
           else:
-            heuristic_value = 0
+            heuristic_value = -100
       else:
         heuristic_value = self.heuristic_function(chess_board_copy,random_move(chess_board_copy, player),player, opponent)
       totalSim=totalSim-1
       heuristics= heuristics+heuristic_value
-    # print('end')
+      
     return heuristics/total #returns average
 
 
@@ -492,6 +487,8 @@ class StudentAgent(Agent):
 
   #Creating Nodes and links between them for pruning.
   def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
+    ###check the board size for simulation adjustments######################################################## TO DO
+
     chess_board_copy= deepcopy(chess_board)
 
     grandParent= createNode(chess_board_copy, 0, 0 , max = 1 , children = list(), move=(-1,-1)) #max node
@@ -518,7 +515,7 @@ class StudentAgent(Agent):
       execute_move(parentsBoard, GPMove , player) # parents board
 
       parent= createNode(parentsBoard, GPHvalue, 0  , max=0, children = list() , move = GPMove ) #min node with no children, yet..
-      PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
+      #PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
 
       #sort Parent moves by heuristic values descending
       # heuristicOrdering = []
@@ -528,21 +525,26 @@ class StudentAgent(Agent):
 
       #created all children of each parent and put them in a list of the Parent with respect to their heuristic values.
       # for PMove, PHValue in heuristicOrdering:
-      for PMove in PMoves:
-        childsBoard = deepcopy(parentsBoard)
-        execute_move(childsBoard, PMove , opponent) # childs board
+      #for PMove in PMoves:
+      # childsBoard = deepcopy(parentsBoard)
+      # execute_move(childsBoard, PMove , opponent) # childs board
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
-        child=createNode(childsBoard, 0, self.monteCarloFaster(childsBoard, numberOFSimulations, player, opponent, 2)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
-        parent.children.append(child)
-      
-
+      # child=createNode(childsBoard, 0, self.monteCarloFaster(childsBoard, numberOFSimulations, player, opponent, 4)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
+      # parent.children.append(child)
+      averageForParent= self.monteCarloFaster(parentsBoard, numberOFSimulations, player, opponent, 15)
+      parent.montecarloSuccessAndTot = averageForParent
 
       grandParent.children.append(parent)
-    winning_prob, winning_move = self.alphaBetaPruningAlgo(grandParent, grandParent.move)
-    grandParent.montecarloSuccessAndTot = winning_prob
-
-
-    return winning_move
+   # winning_prob, winning_move = self.alphaBetaPruningAlgo(grandParent, grandParent.move)
+    #grandParent.montecarloSuccessAndTot = winning_prob
+    max = -np.inf
+    childTemp = Node(None, 0,0,1 ,list(),(-1,-1))
+    for child in grandParent.children:
+      if child.montecarloSuccessAndTot > max :
+        max= child.montecarloSuccessAndTot
+        childTemp=child 
+    return childTemp.move
+    #return winning_move
 
 
 
