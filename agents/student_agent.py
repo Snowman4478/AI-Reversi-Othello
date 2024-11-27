@@ -521,9 +521,16 @@ class StudentAgent(Agent):
     corners = set([(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)])
 
     if corners & set(GPmoves):
+      best_corner = ((-1,-1),-1)
       for move in GPmoves:
         if move in corners:
-          return move
+          heuristic_value = self.heuristic_function(chess_board_copy, move, player, opponent)
+          if heuristic_value > best_corner[1]:
+            best_corner = (move, heuristic_value)
+      
+      return best_corner[0]
+          
+      
 
     #sort grandParent moves by heuristic values descending
     heuristics = []
