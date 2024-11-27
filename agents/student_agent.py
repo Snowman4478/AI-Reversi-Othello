@@ -510,23 +510,23 @@ class StudentAgent(Agent):
     print(f' board size is {board_size}')
     #too fast, more adjustment
     if(board_size == 6 ):
-      numberOFSimulations = 17
+      numberOFSimulations = 20
       steps = 15
 
     #its perfect
     if(board_size == 8 ):
-      numberOFSimulations = 17
+      numberOFSimulations = 20
       steps = 12
 
     # alittle tweaking
     if(board_size == 10):
-      numberOFSimulations = 10
+      numberOFSimulations = 15
       steps = 10
     
     #a little bit more tweaking
     if(board_size ==12):
-      numberOFSimulations = 8
-      steps = 7
+      numberOFSimulations = 15
+      steps = 10
     
     chess_board_copy= deepcopy(chess_board)
 
@@ -547,21 +547,21 @@ class StudentAgent(Agent):
       
       return best_corner[0]
     
-    #
-      
 
     #sort grandParent moves by heuristic values descending
     heuristics = []
     for GPmove in GPmoves:
       heuristics.append((GPmove, self.heuristic_function(chess_board_copy, GPmove, player, opponent)))
     heuristics.sort( key=lambda tup: tup[1], reverse=True)
-
+    
+    i=0
     #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
     for GPMove,GPHvalue in heuristics : 
-      parentsBoard = deepcopy(chess_board_copy)
-      execute_move(parentsBoard, GPMove , player) # parents board
+      if (i < 8):
+        parentsBoard = deepcopy(chess_board_copy)
+        execute_move(parentsBoard, GPMove , player) # parents board
 
-      parent= createNode(parentsBoard, GPHvalue, 0  , max=0, children = list() , move = GPMove ) #min node with no children, yet..
+        parent= createNode(parentsBoard, GPHvalue, 0  , max=0, children = list() , move = GPMove ) #min node with no children, yet..
       #PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
 
       #sort Parent moves by heuristic values descending
@@ -578,12 +578,14 @@ class StudentAgent(Agent):
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
       # child=createNode(childsBoard, 0, self.monteCarloFaster(childsBoard, numberOFSimulations, player, opponent, 4)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
       # parent.children.append(child)
-      averageForParent= self.monteCarloFaster(parentsBoard, numberOFSimulations, player, opponent, steps)
-      parent.montecarloSuccessAndTot = averageForParent
+        averageForParent= self.monteCarloFaster(parentsBoard, numberOFSimulations, player, opponent, steps)
+        parent.montecarloSuccessAndTot = averageForParent
 
-      grandParent.children.append(parent)
+        grandParent.children.append(parent)
+        i=i+1
    # winning_prob, winning_move = self.alphaBetaPruningAlgo(grandParent, grandParent.move)
     #grandParent.montecarloSuccessAndTot = winning_prob
+    
     max = -np.inf
     childTemp = Node(None, 0,0,1 ,list(),(-1,-1))
     for child in grandParent.children:
