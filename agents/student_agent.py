@@ -327,6 +327,20 @@ class StudentAgent(Agent):
   
 
 
+  #see how many full lines on the side we have
+  def full_side(self, chess_board):
+    board_size = (chess_board.shape)[0]
+
+    row0_check = np.all(chess_board[0, :] != 0)
+    col0_check = np.all(chess_board[:, 0] != 0)
+    rown_check = np.all(chess_board[board_size-1, :] != 0)
+    coln_check = np.all(chess_board[:, board_size-1] != 0)
+
+    sum_of_sides = row0_check + col0_check + rown_check + coln_check
+
+    return 100*sum_of_sides/4
+
+
   #our actual heuristic function will be a linear combination of the previous factors
   def heuristic_function(self, chess_board, move, player, opponent):
     chess_board_copy = deepcopy(chess_board)
@@ -334,8 +348,8 @@ class StudentAgent(Agent):
     execute_move(chess_board_copy, move, player)
     #weights will be in the following order:
     #taken_corner, fixed_pieces, adjacent_spaces, piece_diff
-    #does_opponent_pass, placement_score, available_moves 
-    weights = [0, 0, 0, 0, 0, 0, 0]
+    #does_opponent_pass, placement_score, available_moves, full_side 
+    weights = [0, 0, 0, 0, 0, 0, 0, 0]
 
     nonzero_pieces = np.count_nonzero(chess_board_copy)
     total_pieces = np.size(chess_board_copy)
@@ -345,13 +359,13 @@ class StudentAgent(Agent):
 
     #if we are near the start of the game, weight differently
     if cur_progress <= 1/3:
-      weights = [0.9, 0.6, 0.4, 0, 0, 0.4, 0.3]
+      weights = [0.9, 0.6, 0.4, 0, 0, 0.4, 0.3, 0.6]
     #midgame
     elif 1/3 < cur_progress and cur_progress <= 2/3:
-      weights = [0.9, 0.6, 0.4, 0.2, 0.1, 0.4, 0.2]
+      weights = [0.9, 0.6, 0.4, 0.2, 0.1, 0.4, 0.2, 0.6]
     #endgame
     else:
-      weights = [0.9, 0.6, 0.4, 0.4, 0.6, 0.4, 0]
+      weights = [0.9, 0.6, 0.4, 0.4, 0.6, 0.4, 0, 0.6]
     
     #if weight = 0 for a process we can save time by just not computing it,
     #only weights that can be 0 are piece_diff, opp_pass and available moves
@@ -378,8 +392,11 @@ class StudentAgent(Agent):
     else:
       avail_heuristic = self.available_moves(chess_board_copy, player, opponent)
     
+    side_heuristic = self.full_side(chess_board_copy)
+    
     heuristic_variables = [corner_heuristic, fixed_heuristic, adjacent_heuristic, 
-                           diff_heuristic, pass_heuristic, score_heuristic, avail_heuristic]
+                           diff_heuristic, pass_heuristic, 
+                           score_heuristic, avail_heuristic, side_heuristic]
     
     #get weighted values
     weighted_values = [var * weight for var, weight in zip(heuristic_variables, weights)]
@@ -529,7 +546,8 @@ class StudentAgent(Agent):
             best_corner = (move, heuristic_value)
       
       return best_corner[0]
-          
+    
+    #
       
 
     #sort grandParent moves by heuristic values descending
