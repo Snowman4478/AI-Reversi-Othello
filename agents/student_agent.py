@@ -488,7 +488,29 @@ class StudentAgent(Agent):
   #Creating Nodes and links between them for pruning.
   def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
     ###check the board size for simulation adjustments######################################################## TO DO
+    board_size = (chess_board.shape)[0]
+    steps = 0
+    print(f' board size is {board_size}')
+    #too fast, more adjustment
+    if(board_size == 6 ):
+      numberOFSimulations = 17
+      steps = 15
 
+    #its perfect
+    if(board_size == 8 ):
+      numberOFSimulations = 17
+      steps = 12
+
+    # alittle tweaking
+    if(board_size == 10):
+      numberOFSimulations = 10
+      steps = 10
+    
+    #a little bit more tweaking
+    if(board_size ==12):
+      numberOFSimulations = 8
+      steps = 7
+    
     chess_board_copy= deepcopy(chess_board)
 
     grandParent= createNode(chess_board_copy, 0, 0 , max = 1 , children = list(), move=(-1,-1)) #max node
@@ -531,7 +553,7 @@ class StudentAgent(Agent):
         ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
       # child=createNode(childsBoard, 0, self.monteCarloFaster(childsBoard, numberOFSimulations, player, opponent, 4)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
       # parent.children.append(child)
-      averageForParent= self.monteCarloFaster(parentsBoard, numberOFSimulations, player, opponent, 15)
+      averageForParent= self.monteCarloFaster(parentsBoard, numberOFSimulations, player, opponent, steps)
       parent.montecarloSuccessAndTot = averageForParent
 
       grandParent.children.append(parent)
