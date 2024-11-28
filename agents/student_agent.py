@@ -462,7 +462,7 @@ class StudentAgent(Agent):
     nonzero_pieces = np.count_nonzero(chess_board_copy)
     total_pieces = np.size(chess_board_copy)
 
-    within_endgame = (total_pieces - nonzero_pieces) < 5 
+    within_endgame = (total_pieces - nonzero_pieces) < 9
 
     grandParent= createNode(chess_board_copy, 0, 0 , max = 1 , children = list(), move=(-1,-1)) #max node
     GPmoves = get_valid_moves(chess_board_copy, player) #players valid moves
