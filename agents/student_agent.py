@@ -520,13 +520,13 @@ class StudentAgent(Agent):
 
     # alittle tweaking
     if(board_size == 10):
-      numberOFSimulations = 15
-      steps = 10
+      numberOFSimulations = 12
+      steps = 8
     
     #a little bit more tweaking
     if(board_size ==12):
-      numberOFSimulations = 15
-      steps = 10
+      numberOFSimulations = 12
+      steps = 8
     
     chess_board_copy= deepcopy(chess_board)
 
