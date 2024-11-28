@@ -358,10 +358,10 @@ class StudentAgent(Agent):
     cur_progress = nonzero_pieces/total_pieces
 
     #if we are near the start of the game, weight differently
-    if cur_progress <= 1/3:
+    if cur_progress <= 1/4:
       weights = [0.9, 0.6, 0.4, 0, 0, 0.4, 0.3, 0.6]
     #midgame
-    elif 1/3 < cur_progress and cur_progress <= 2/3:
+    elif 1/4 < cur_progress and cur_progress <= 2/3:
       weights = [0.9, 0.6, 0.4, 0.2, 0.1, 0.4, 0.2, 0.6]
     #endgame
     else:
@@ -510,23 +510,23 @@ class StudentAgent(Agent):
     print(f' board size is {board_size}')
     #too fast, more adjustment
     if(board_size == 6 ):
-      numberOFSimulations = 20
-      steps = 15
+      numberOFSimulations = 100
+      steps = 5
 
     #its perfect
     if(board_size == 8 ):
-      numberOFSimulations = 20
-      steps = 12
+      numberOFSimulations = 80
+      steps = 5
 
     # alittle tweaking
     if(board_size == 10):
-      numberOFSimulations = 12
-      steps = 8
+      numberOFSimulations = 45
+      steps = 5
     
     #a little bit more tweaking
     if(board_size ==12):
-      numberOFSimulations = 12
-      steps = 8
+      numberOFSimulations = 35
+      steps = 5
     
     chess_board_copy= deepcopy(chess_board)
 
@@ -537,27 +537,34 @@ class StudentAgent(Agent):
     board_size = (chess_board_copy.shape)[0]
     corners = set([(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)])
 
-    if corners & set(GPmoves):
-      best_corner = ((-1,-1),-1)
-      for move in GPmoves:
-        if move in corners:
-          heuristic_value = self.heuristic_function(chess_board_copy, move, player, opponent)
-          if heuristic_value > best_corner[1]:
-            best_corner = (move, heuristic_value)
+    # if corners & set(GPmoves):
+    #   best_corner = ((-1,-1),-1)
+    #   for move in GPmoves:
+    #     if move in corners:
+    #       heuristic_value = self.heuristic_function(chess_board_copy, move, player, opponent)
+    #       if heuristic_value > best_corner[1]:
+    #         best_corner = (move, heuristic_value)
       
-      return best_corner[0]
-    
+    #   return best_corner[0]
+  
 
     #sort grandParent moves by heuristic values descending
     heuristics = []
+    corners= []
     for GPmove in GPmoves:
-      heuristics.append((GPmove, self.heuristic_function(chess_board_copy, GPmove, player, opponent)))
+      var = self.heuristic_function(chess_board_copy, GPmove, player, opponent)
+      if GPMove in corners:
+        corners.append(GPMove, var)
+      heuristics.append((GPmove,var))
     heuristics.sort( key=lambda tup: tup[1], reverse=True)
+    corners.sort( key=lambda tup: tup[1], reverse=True)
+    if corners:
+      return corners[0]
     
     i=0
     #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
     for GPMove,GPHvalue in heuristics : 
-      if (i < 8):
+      if (i < 6):
         parentsBoard = deepcopy(chess_board_copy)
         execute_move(parentsBoard, GPMove , player) # parents board
 
@@ -592,7 +599,12 @@ class StudentAgent(Agent):
       if child.montecarloSuccessAndTot > max :
         max= child.montecarloSuccessAndTot
         childTemp=child 
-    return childTemp.move
+    
+    myset=set(GPmoves)
+    if childTemp.move in myset : 
+      return childTemp.move # normal algorithm return
+    else: 
+      return grandParent.children[0] #returns heuristicly better move if program chose an invalid move
     #return winning_move
 
 
