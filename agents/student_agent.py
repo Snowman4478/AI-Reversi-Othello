@@ -68,11 +68,6 @@ class StudentAgent(Agent):
 
     print("My AI's turn took ", time_taken, "seconds.")
 
-    # Dummy return (you should replace this with your actual logic)
-    # Returning a random valid move as an example
-    print(f'player = {player}')
-    print(chess_board)
-    print(next_move)
     return next_move
   
 
@@ -142,7 +137,7 @@ class StudentAgent(Agent):
     return 100*fixed_count/len(player_pieces_indices)
   
 
-  #calculates adjacent empty sqaures of opponent - player and returns normalized value
+  #calculates adjacent empty sqaures of player - opponent and returns normalized value
   def adjacent_spaces(self, chess_board, player, opponent):
     board_size = chess_board.shape[0]
     
@@ -187,7 +182,7 @@ class StudentAgent(Agent):
     return 100*(len(player_seen) - len(opp_seen))/(len(opp_seen) + len(player_seen)+1)
   
 
-  #calculates players pieces - opponentes and returns normalized value
+  #calculates players pieces - opponents and returns normalized value
   def piece_difference(self, chess_board, player, opponent):
 
     num_of_player_pieces = len(np.argwhere(chess_board == player))
@@ -326,7 +321,6 @@ class StudentAgent(Agent):
     return 100*(player_moves - opponent_moves)/(player_moves + opponent_moves + 1)
   
 
-
   #see how many full lines on the side we have
   def full_side(self, chess_board):
     board_size = (chess_board.shape)[0]
@@ -402,34 +396,6 @@ class StudentAgent(Agent):
     weighted_values = [var * weight for var, weight in zip(heuristic_variables, weights)]
 
     return sum(weighted_values)
-  
-  
-  #monteCarlo function, returns the number of successes divided by the total number of simulations
-  def monteCarlo(self,chess_board , totalSim , player, opponent): 
-
-    success=0
-    total=totalSim
-    while (totalSim >=0):
-      chess_board_copy = deepcopy(chess_board)
-      i=0 
-      while (check_endgame(chess_board_copy, player , opponent)[0] == False) :
-        if (i%2 == 0): #player's move
-          if(get_valid_moves(chess_board_copy, player) == []):
-            break
-          else:
-            execute_move(chess_board_copy, random_move(chess_board_copy, player), player)
-        else: #opponent's move
-          if(get_valid_moves(chess_board_copy, opponent) == []):
-            break
-          else:
-            execute_move(chess_board_copy, random_move(chess_board_copy, opponent), opponent)
-        
-        i=i+1
-      is_end,bluePlayerSc, brownPlayerSc = check_endgame(chess_board_copy, player , opponent)
-      if (player == 1 and bluePlayerSc > brownPlayerSc) or (player == 2 and brownPlayerSc > bluePlayerSc):
-        success = success+1
-      totalSim=totalSim-1
-    return success/total # returns a probability of success
 
 
   #monteCarlo function,FASTER, returns the average heuristic value of the board after certain number of steps
@@ -469,64 +435,26 @@ class StudentAgent(Agent):
     return heuristics/total #returns average
 
 
-  #Alpha-beta pruning for max node, helper function
-  def maxValue(self, s, alpha, beta, cur_move):
-    if s.children == [] : # if cutoff s , return Evaluation(s)
-      return (s.montecarloSuccessAndTot, s.move)
-    for eachChild in s.children:
-      child_alpha, child_move  = self.minValue(eachChild, alpha, beta, eachChild.move)
-      alpha = max(alpha, child_alpha)
-      if alpha >= beta: 
-        return (beta, child_move)
-    return (alpha, child_move)
-
-
-  #Alpha-beta pruning for min node, helper function
-  def minValue(self, s, alpha, beta, cur_move):
-    if s.children == [] : # if cutoff s , return Evaluation(s)
-      return (s.montecarloSuccessAndTot, s.move)
-    for eachChild in s.children:
-      child_beta, child_move = self.maxValue(eachChild, alpha, beta, eachChild.move)
-      beta = min(beta, child_beta)
-      if alpha >= beta: 
-        return (alpha, s.move)
-    return (beta, s.move)
-
-
-  #Returns winning probability againsts a good opponent for a given max Node
-  def alphaBetaPruningAlgo(self, InitialNode, cur_move):
-    if InitialNode.max== 1 :
-      winningProbability, winning_move = self.maxValue(InitialNode, -np.inf, np.inf, cur_move)
-    else: 
-      winningProbability, winning_move = self.minValue(InitialNode, -np.inf, np.inf, cur_move)
-    return winningProbability, winning_move
-
-
   #Creating Nodes and links between them for pruning.
   def treeStructure(self, chess_board , player ,opponent, numberOFSimulations):
-    ###check the board size for simulation adjustments######################################################## TO DO
+    ###check the board size for simulation adjustments
     board_size = (chess_board.shape)[0]
     steps = 0
-    print(f' board size is {board_size}')
-    #too fast, more adjustment
     if(board_size == 6 ):
       numberOFSimulations = 100
-      steps = 5
+      steps = 4
 
-    #its perfect
     if(board_size == 8 ):
-      numberOFSimulations = 80
-      steps = 5
+      numberOFSimulations = 60
+      steps = 4
 
-    # alittle tweaking
     if(board_size == 10):
-      numberOFSimulations = 45
-      steps = 5
+      numberOFSimulations = 40
+      steps = 4
     
-    #a little bit more tweaking
     if(board_size ==12):
       numberOFSimulations = 35
-      steps = 5
+      steps = 4
     
     chess_board_copy= deepcopy(chess_board)
 
@@ -535,20 +463,10 @@ class StudentAgent(Agent):
 
     #if corner is the move, instantly take
     board_size = (chess_board_copy.shape)[0]
-    corners = set([(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)])
+    corners = set([(0,0),(0,board_size-1),(board_size-1,0),(board_size-1,board_size-1)]) 
 
-    # if corners & set(GPmoves):
-    #   best_corner = ((-1,-1),-1)
-    #   for move in GPmoves:
-    #     if move in corners:
-    #       heuristic_value = self.heuristic_function(chess_board_copy, move, player, opponent)
-    #       if heuristic_value > best_corner[1]:
-    #         best_corner = (move, heuristic_value)
-      
-    #   return best_corner[0]
-  
-
-    #sort grandParent moves by heuristic values descending
+    #sort grandParent moves by heuristic values descending also check if a corner
+    #is apart of the moves and if so take the best corner.
     heuristics = []
     our_corners= []
     for GPmove in GPmoves:
@@ -568,30 +486,12 @@ class StudentAgent(Agent):
         parentsBoard = deepcopy(chess_board_copy)
         execute_move(parentsBoard, GPMove , player) # parents board
 
-        parent= createNode(parentsBoard, GPHvalue, 0  , max=0, children = list() , move = GPMove ) #min node with no children, yet..
-      #PMoves = get_valid_moves(parentsBoard , opponent) #opponents valid moves 
-
-      #sort Parent moves by heuristic values descending
-      # heuristicOrdering = []
-      # for PMove in PMoves:
-      #   heuristicOrdering.append((PMove, self.heuristic_function(parentsBoard, PMove, player, opponent))) 
-      # heuristicOrdering.sort( key=lambda tup: tup[1], reverse=True)
-
-      #created all children of each parent and put them in a list of the Parent with respect to their heuristic values.
-      # for PMove, PHValue in heuristicOrdering:
-      #for PMove in PMoves:
-      # childsBoard = deepcopy(parentsBoard)
-      # execute_move(childsBoard, PMove , opponent) # childs board
-        ########### MONTE CARLO VALUES ARE AT LEAF NODES, no use for heuristic values at depth 2
-      # child=createNode(childsBoard, 0, self.monteCarloFaster(childsBoard, numberOFSimulations, player, opponent, 4)  , max=1, children = list(), move= PMove) #max node where we get the montecarlo values of the board states where player wins, +1s
-      # parent.children.append(child)
+        parent= createNode(parentsBoard, GPHvalue, 0  , max=0, children = list() , move = GPMove ) #min node with no children
         averageForParent= self.monteCarloFaster(parentsBoard, numberOFSimulations, player, opponent, steps)
         parent.montecarloSuccessAndTot = averageForParent
 
         grandParent.children.append(parent)
         i=i+1
-   # winning_prob, winning_move = self.alphaBetaPruningAlgo(grandParent, grandParent.move)
-    #grandParent.montecarloSuccessAndTot = winning_prob
     
     max = -np.inf
     childTemp = Node(None, 0,0,1 ,list(),(-1,-1))
@@ -605,7 +505,6 @@ class StudentAgent(Agent):
       return childTemp.move # normal algorithm return
     else: 
       return grandParent.children[0] #returns heuristicly better move if program chose an invalid move
-    #return winning_move
 
 
 
