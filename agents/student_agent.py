@@ -550,16 +550,16 @@ class StudentAgent(Agent):
 
     #sort grandParent moves by heuristic values descending
     heuristics = []
-    corners= []
+    our_corners= []
     for GPmove in GPmoves:
       var = self.heuristic_function(chess_board_copy, GPmove, player, opponent)
-      if GPMove in corners:
-        corners.append(GPMove, var)
+      if GPmove in corners:
+        our_corners.append((GPmove, var))
       heuristics.append((GPmove,var))
     heuristics.sort( key=lambda tup: tup[1], reverse=True)
-    corners.sort( key=lambda tup: tup[1], reverse=True)
-    if corners:
-      return corners[0]
+    our_corners.sort( key=lambda tup: tup[1], reverse=True)
+    if our_corners:
+      return our_corners[0]
     
     i=0
     #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
