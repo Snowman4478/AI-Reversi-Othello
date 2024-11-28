@@ -359,7 +359,7 @@ class StudentAgent(Agent):
       weights = [0.9, 0.6, 0.4, 0.2, 0.1, 0.4, 0.2, 0.6]
     #endgame
     else:
-      weights = [0.9, 0.6, 0.4, 0.4, 0.6, 0.4, 0, 0.6]
+      weights = [0.9, 0.6, 0.4, 0.8, 0.6, 0.4, 0, 0.6]
     
     #if weight = 0 for a process we can save time by just not computing it,
     #only weights that can be 0 are piece_diff, opp_pass and available moves
@@ -458,6 +458,12 @@ class StudentAgent(Agent):
     
     chess_board_copy= deepcopy(chess_board)
 
+    #Check to see if we are within the end game
+    nonzero_pieces = np.count_nonzero(chess_board_copy)
+    total_pieces = np.size(chess_board_copy)
+
+    within_endgame = (total_pieces - nonzero_pieces) < 5 
+
     grandParent= createNode(chess_board_copy, 0, 0 , max = 1 , children = list(), move=(-1,-1)) #max node
     GPmoves = get_valid_moves(chess_board_copy, player) #players valid moves
 
@@ -471,7 +477,7 @@ class StudentAgent(Agent):
     our_corners= []
     for GPmove in GPmoves:
       var = self.heuristic_function(chess_board_copy, GPmove, player, opponent)
-      if GPmove in corners:
+      if (GPmove in corners) and not within_endgame:
         our_corners.append((GPmove, var))
       heuristics.append((GPmove,var))
     heuristics.sort( key=lambda tup: tup[1], reverse=True)
