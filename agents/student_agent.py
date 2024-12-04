@@ -442,19 +442,19 @@ class StudentAgent(Agent):
     steps = 0
     if(board_size == 6 ):
       numberOFSimulations = 100
-      steps = 4
+      steps = 3
 
     if(board_size == 8 ):
       numberOFSimulations = 60
-      steps = 4
+      steps = 3
 
     if(board_size == 10):
       numberOFSimulations = 40
-      steps = 4
+      steps = 3
     
     if(board_size ==12):
       numberOFSimulations = 35
-      steps = 4
+      steps = 3
     
     chess_board_copy= deepcopy(chess_board)
 
@@ -488,7 +488,7 @@ class StudentAgent(Agent):
     i=0
     #created all children of all parents and put them in a list of the grandParent with respect to their heuristic values.
     for GPMove,GPHvalue in heuristics : 
-      if (i < 6):
+      if (i < 4):
         parentsBoard = deepcopy(chess_board_copy)
         execute_move(parentsBoard, GPMove , player) # parents board
 
